@@ -39,7 +39,7 @@ DO UPDATE SET "array" = EXCLUDED.array || "legacy_list"."array"`,
         });
     };
 
-    module.listAppend = async function (key, value) {
+    module.listAppend = async function (key: string, value: string | string[]): Promise<void> {
         if (!key) {
             return;
         }
@@ -59,7 +59,7 @@ DO UPDATE SET "array" = "legacy_list"."array" || EXCLUDED.array`,
         });
     };
 
-    module.listRemoveLast = async function (key) {
+    module.listRemoveLast = async function (key: string): Promise<string | null> {
         if (!key) {
             return;
         }
