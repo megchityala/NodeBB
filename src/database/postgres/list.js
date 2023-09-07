@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -32,6 +32,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// using pg module -- connecting to a PostgreSQL daytabase
 const helpers = __importStar(require("./helpers"));
 module.exports = function (module) {
     module.listPrepend = function (key, value) {
@@ -78,7 +79,7 @@ DO UPDATE SET "array" = "legacy_list"."array" || EXCLUDED.array`,
     module.listRemoveLast = function (key) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!key) {
-                return;
+                return null;
             }
             const res = yield module.pool.query({
                 name: 'listRemoveLast',
@@ -98,7 +99,11 @@ UPDATE "legacy_list" l
 RETURNING A."array"[array_length(A."array", 1)] v`,
                 values: [key],
             });
-            return res.rows.length ? res.rows[0].v : null;
+            const rows = res.rows; // Type assertion
+            if (rows.length && rows[0].v !== undefined) {
+                return rows[0].v;
+            }
+            return null;
         });
     };
     module.listRemoveAll = function (key, value) {
@@ -201,6 +206,9 @@ SELECT ARRAY(SELECT m.m
     };
     module.listLength = function (key) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!key) {
+                return null;
+            }
             const res = yield module.pool.query({
                 name: 'listLength',
                 text: `
@@ -212,7 +220,11 @@ SELECT array_length(l."array", 1) l
       WHERE o."_key" = $1::TEXT`,
                 values: [key],
             });
-            return res.rows.length ? res.rows[0].l : 0;
+            const rows = res.rows;
+            if (rows.length) {
+                return rows[0].l;
+            }
+            return null;
         });
     };
 };

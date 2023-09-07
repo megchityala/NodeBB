@@ -1,8 +1,9 @@
-'use strict';
-
+import { Pool, QueryResult } from 'pg';
 // using pg module -- connecting to a PostgreSQL daytabase
-import { Pool, QueryResult } from 'pg'; 
 import * as helpers from './helpers';
+
+
+
 
 // defining all types for my CurrentModule
 interface CurrentModule {
@@ -15,6 +16,11 @@ interface CurrentModule {
     listLength(key: string): Promise<number>;
     transaction(callback: (client: Pool) => Promise<void>): Promise<void>;
     pool: Pool;
+  }
+
+  interface RowResult {
+    v: string; // Replace with the actual type of 'v'
+    l: string[]; // Replace with the actual type of 'l'
   }
 
 module.exports = function (module: CurrentModule): void {
@@ -61,7 +67,7 @@ DO UPDATE SET "array" = "legacy_list"."array" || EXCLUDED.array`,
 
     module.listRemoveLast = async function (key: string): Promise<string | null> {
         if (!key) {
-            return;
+            return null;
         }
 
         const res = await module.pool.query({
@@ -82,8 +88,12 @@ UPDATE "legacy_list" l
 RETURNING A."array"[array_length(A."array", 1)] v`,
             values: [key],
         });
+        const rows = res.rows as { v?: string }[]; // Type assertion
 
-        return res.rows.length ? res.rows[0].v : null;
+        if (rows.length && rows[0].v !== undefined) {
+            return rows[0].v;
+        }
+        return null;
     };
 
     module.listRemoveAll = async function (key: string, value: string | string[]): Promise<void> {
@@ -153,7 +163,7 @@ UPDATE "legacy_list" l
 
         stop += 1;
 
-        const res = await module.pool.query(stop > 0 ? {
+        const res: QueryResult<RowResult> = await module.pool.query(stop > 0 ? {
             name: 'getListRange',
             text: `
 SELECT ARRAY(SELECT m.m
@@ -186,7 +196,10 @@ SELECT ARRAY(SELECT m.m
         return res.rows.length ? res.rows[0].l : [];
     };
 
-    module.listLength = async function (key: string) {
+    module.listLength = async function (key: string): Promise<number | null> {
+        if (!key) {
+            return null;
+        }
         const res = await module.pool.query({
             name: 'listLength',
             text: `
@@ -199,6 +212,11 @@ SELECT array_length(l."array", 1) l
             values: [key],
         });
 
-        return res.rows.length ? res.rows[0].l : 0;
+        const rows = res.rows as { l: number }[];
+
+        if (rows.length) {
+            return rows[0].l;
+        }
+        return null;
     };
 };

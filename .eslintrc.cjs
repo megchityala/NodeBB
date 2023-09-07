@@ -64,7 +64,18 @@ function find_compiled_js() {
                 rules: {
                     "no-use-before-define": "off",
                     "@typescript-eslint/no-use-before-define": "error",			
-                }
+                },
+                
+                
+                settings: {
+                    'import/resolver': {
+                        node: {
+                            extensions: ['.js', '.jsx', '.ts', '.tsx'],
+                            moduleDirectory: ['node_modules', 'src/'],
+                        },
+                    },
+                },
+                
             }
         ]
     };
