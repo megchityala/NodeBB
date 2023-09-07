@@ -67,15 +67,15 @@ function find_compiled_js() {
                 },
                 
                 
-                settings: {
-                    'import/resolver': {
-                        node: {
-                            extensions: ['.js', '.jsx', '.ts', '.tsx'],
-                            moduleDirectory: ['node_modules', 'src/'],
-                        },
-                    },
-                },
-                
             }
-        ]
+        ],
+
+        settings: {
+            'import/resolver': {
+                node: {
+                    paths: ['src'],
+                    extensions: ['.js', '.jsx', '.ts', '.tsx'],
+                }
+            },
+        },
     };
