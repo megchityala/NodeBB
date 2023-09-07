@@ -1,57 +1,88 @@
 'use strict';
-
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const helpers = __importStar(require("./helpers"));
 module.exports = function (module) {
-    const helpers = require('./helpers');
-
-    module.listPrepend = async function (key, value) {
-        if (!key) {
-            return;
-        }
-
-        await module.transaction(async (client) => {
-            await helpers.ensureLegacyObjectType(client, key, 'list');
-            value = Array.isArray(value) ? value : [value];
-            value.reverse();
-            await client.query({
-                name: 'listPrependValues',
-                text: `
+    module.listPrepend = function (key, value) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!key) {
+                return;
+            }
+            yield module.transaction((client) => __awaiter(this, void 0, void 0, function* () {
+                yield helpers.ensureLegacyObjectType(client, key, 'list');
+                value = Array.isArray(value) ? value : [value];
+                value.reverse();
+                yield client.query({
+                    name: 'listPrependValues',
+                    text: `
 INSERT INTO "legacy_list" ("_key", "array")
 VALUES ($1::TEXT, $2::TEXT[])
 ON CONFLICT ("_key")
 DO UPDATE SET "array" = EXCLUDED.array || "legacy_list"."array"`,
-                values: [key, value],
-            });
+                    values: [key, value],
+                });
+            }));
         });
     };
-
-    module.listAppend = async function (key, value) {
-        if (!key) {
-            return;
-        }
-        await module.transaction(async (client) => {
-            value = Array.isArray(value) ? value : [value];
-
-            await helpers.ensureLegacyObjectType(client, key, 'list');
-            await client.query({
-                name: 'listAppend',
-                text: `
+    module.listAppend = function (key, value) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!key) {
+                return;
+            }
+            yield module.transaction((client) => __awaiter(this, void 0, void 0, function* () {
+                value = Array.isArray(value) ? value : [value];
+                yield helpers.ensureLegacyObjectType(client, key, 'list');
+                yield client.query({
+                    name: 'listAppend',
+                    text: `
 INSERT INTO "legacy_list" ("_key", "array")
 VALUES ($1::TEXT, $2::TEXT[])
 ON CONFLICT ("_key")
 DO UPDATE SET "array" = "legacy_list"."array" || EXCLUDED.array`,
-                values: [key, value],
-            });
+                    values: [key, value],
+                });
+            }));
         });
     };
-
-    module.listRemoveLast = async function (key) {
-        if (!key) {
-            return;
-        }
-
-        const res = await module.pool.query({
-            name: 'listRemoveLast',
-            text: `
+    module.listRemoveLast = function (key) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!key) {
+                return;
+            }
+            const res = yield module.pool.query({
+                name: 'listRemoveLast',
+                text: `
 WITH A AS (
     SELECT l.*
       FROM "legacy_object_live" o
@@ -65,44 +96,43 @@ UPDATE "legacy_list" l
   FROM A
  WHERE A."_key" = l."_key"
 RETURNING A."array"[array_length(A."array", 1)] v`,
-            values: [key],
+                values: [key],
+            });
+            return res.rows.length ? res.rows[0].v : null;
         });
-
-        return res.rows.length ? res.rows[0].v : null;
     };
-
-    module.listRemoveAll = async function (key, value) {
-        if (!key) {
-            return;
-        }
-        // TODO: remove all values with one query
-        if (Array.isArray(value)) {
-            await Promise.all(value.map(v => module.listRemoveAll(key, v)));
-            return;
-        }
-        await module.pool.query({
-            name: 'listRemoveAll',
-            text: `
+    module.listRemoveAll = function (key, value) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!key) {
+                return;
+            }
+            // TODO: remove all values with one query
+            if (Array.isArray(value)) {
+                yield Promise.all(value.map(v => module.listRemoveAll(key, v)));
+                return;
+            }
+            yield module.pool.query({
+                name: 'listRemoveAll',
+                text: `
 UPDATE "legacy_list" l
    SET "array" = array_remove(l."array", $2::TEXT)
   FROM "legacy_object_live" o
  WHERE o."_key" = l."_key"
    AND o."type" = l."type"
    AND o."_key" = $1::TEXT`,
-            values: [key, value],
+                values: [key, value],
+            });
         });
     };
-
-    module.listTrim = async function (key, start, stop) {
-        if (!key) {
-            return;
-        }
-
-        stop += 1;
-
-        await module.pool.query(stop > 0 ? {
-            name: 'listTrim',
-            text: `
+    module.listTrim = function (key, start, stop) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!key) {
+                return;
+            }
+            stop += 1;
+            yield module.pool.query(stop > 0 ? {
+                name: 'listTrim',
+                text: `
 UPDATE "legacy_list" l
    SET "array" = ARRAY(SELECT m.m
                          FROM UNNEST(l."array") WITH ORDINALITY m(m, i)
@@ -113,10 +143,10 @@ UPDATE "legacy_list" l
  WHERE o."_key" = l."_key"
    AND o."type" = l."type"
    AND o."_key" = $1::TEXT`,
-            values: [key, start, stop],
-        } : {
-            name: 'listTrimBack',
-            text: `
+                values: [key, start, stop],
+            } : {
+                name: 'listTrimBack',
+                text: `
 UPDATE "legacy_list" l
    SET "array" = ARRAY(SELECT m.m
                          FROM UNNEST(l."array") WITH ORDINALITY m(m, i)
@@ -127,20 +157,19 @@ UPDATE "legacy_list" l
  WHERE o."_key" = l."_key"
    AND o."type" = l."type"
    AND o."_key" = $1::TEXT`,
-            values: [key, start, stop],
+                values: [key, start, stop],
+            });
         });
     };
-
-    module.getListRange = async function (key, start, stop) {
-        if (!key) {
-            return;
-        }
-
-        stop += 1;
-
-        const res = await module.pool.query(stop > 0 ? {
-            name: 'getListRange',
-            text: `
+    module.getListRange = function (key, start, stop) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!key) {
+                return;
+            }
+            stop += 1;
+            const res = yield module.pool.query(stop > 0 ? {
+                name: 'getListRange',
+                text: `
 SELECT ARRAY(SELECT m.m
                FROM UNNEST(l."array") WITH ORDINALITY m(m, i)
               ORDER BY m.i ASC
@@ -151,10 +180,10 @@ SELECT ARRAY(SELECT m.m
          ON o."_key" = l."_key"
         AND o."type" = l."type"
       WHERE o."_key" = $1::TEXT`,
-            values: [key, start, stop],
-        } : {
-            name: 'getListRangeBack',
-            text: `
+                values: [key, start, stop],
+            } : {
+                name: 'getListRangeBack',
+                text: `
 SELECT ARRAY(SELECT m.m
                FROM UNNEST(l."array") WITH ORDINALITY m(m, i)
               ORDER BY m.i ASC
@@ -165,25 +194,25 @@ SELECT ARRAY(SELECT m.m
          ON o."_key" = l."_key"
         AND o."type" = l."type"
  WHERE o."_key" = $1::TEXT`,
-            values: [key, start, stop],
+                values: [key, start, stop],
+            });
+            return res.rows.length ? res.rows[0].l : [];
         });
-
-        return res.rows.length ? res.rows[0].l : [];
     };
-
-    module.listLength = async function (key) {
-        const res = await module.pool.query({
-            name: 'listLength',
-            text: `
+    module.listLength = function (key) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const res = yield module.pool.query({
+                name: 'listLength',
+                text: `
 SELECT array_length(l."array", 1) l
   FROM "legacy_object_live" o
  INNER JOIN "legacy_list" l
          ON o."_key" = l."_key"
         AND o."type" = l."type"
       WHERE o."_key" = $1::TEXT`,
-            values: [key],
+                values: [key],
+            });
+            return res.rows.length ? res.rows[0].l : 0;
         });
-
-        return res.rows.length ? res.rows[0].l : 0;
     };
 };
