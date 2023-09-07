@@ -86,7 +86,7 @@ RETURNING A."array"[array_length(A."array", 1)] v`,
         return res.rows.length ? res.rows[0].v : null;
     };
 
-    module.listRemoveAll = async function (key, value) {
+    module.listRemoveAll = async function (key: string, value: string | string[]): Promise<void> {
         if (!key) {
             return;
         }
@@ -108,7 +108,7 @@ UPDATE "legacy_list" l
         });
     };
 
-    module.listTrim = async function (key, start, stop) {
+    module.listTrim = async function (key: string, start: number, stop: number): Promise<void> {
         if (!key) {
             return;
         }
@@ -146,7 +146,7 @@ UPDATE "legacy_list" l
         });
     };
 
-    module.getListRange = async function (key, start, stop) {
+    module.getListRange = async function (key: string, start: number, stop: number): Promise<string[]> {
         if (!key) {
             return;
         }
