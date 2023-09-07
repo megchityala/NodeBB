@@ -186,7 +186,7 @@ SELECT ARRAY(SELECT m.m
         return res.rows.length ? res.rows[0].l : [];
     };
 
-    module.listLength = async function (key) {
+    module.listLength = async function (key: string) {
         const res = await module.pool.query({
             name: 'listLength',
             text: `
